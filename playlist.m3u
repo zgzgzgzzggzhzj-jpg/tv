@@ -1,3 +1,3 @@
 #EXTM3U
 #EXTINF:-1,Ефір
-https://api.trycloudflare.com/index.m3u8
+http://127.0.0.1:8090/index.m3u8
