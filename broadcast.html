@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>Ефір</title>
+<style>
+body{margin:0;background:#000;color:#fff;font:16px sans-serif;padding:12px}
+video{width:100%;background:#111;border-radius:8px}
+button,select,input{font-size:16px;padding:10px;margin:4px 0;width:100%;box-sizing:border-box}
+#link{word-break:break-all;color:#7cf}
+</style>
+<video id=v autoplay muted playsinline></video>
+<select id=cam><option value=user>Фронтальна камера</option><option value=environment>Основна камера</option></select>
+<input id=tok placeholder="Токен (порожньо = випадковий)">
+<button id=go>Почати ефір</button>
+<button id=stop style="display:none">Зупинити</button>
+<div id=info></div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let peer,stream;
+const rnd=()=>[...crypto.getRandomValues(new Uint8Array(8))].map(b=>b.toString(16).padStart(2,'0')).join('');
+try{$('tok').value=localStorage.tok||''}catch(e){}
+$('go').onclick=async()=>{
+ try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:$('cam').value,width:{ideal:1280},height:{ideal:720}},audio:true})}
+ catch(e){$('info').textContent='Немає доступу до камери: '+e.message;return}
+ $('v').srcObject=stream;
+ const t=($('tok').value.trim().replace(/[^\w-]/g,''))||rnd();
+ try{localStorage.tok=t}catch(e){}
+ $('tok').value=t;
+ peer=new Peer('tvlive-'+t);
+ peer.on('open',()=>{
+  const u=new URL('watch.html',location.href);u.searchParams.set('t',t);
+  $('info').innerHTML='Ефір іде. Посилання для глядачів:<br><span id=link>'+u+'</span>';
+ });
+ peer.on('connection',c=>c.on('open',()=>peer.call(c.peer,stream)));
+ peer.on('error',e=>{$('info').textContent=e.type==='unavailable-id'?'Цей токен уже використовується, закрий інші вкладки або вибери інший':'Помилка: '+e.type});
+ try{await navigator.wakeLock.request('screen')}catch(e){}
+ $('go').style.display='none';$('stop').style.display='block';
+};
+$('stop').onclick=()=>{peer&&peer.destroy();stream&&stream.getTracks().forEach(t=>t.stop());location.reload()};
+</script>

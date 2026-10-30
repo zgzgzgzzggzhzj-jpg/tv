@@ -1,0 +1,23 @@
+<!doctype html>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>Ефір</title>
+<style>body{margin:0;background:#000;color:#fff;font:16px sans-serif}video{width:100%;max-height:90vh;background:#000}#s{padding:12px}</style>
+<video id=v autoplay playsinline controls></video>
+<div id=s>Підключення…</div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+const t=(new URLSearchParams(location.search).get('t')||'').replace(/[^\w-]/g,'');
+const s=document.getElementById('s'),v=document.getElementById('v');
+if(!t)s.textContent='У посиланні немає токена.';
+else{
+ const peer=new Peer();
+ peer.on('open',()=>{peer.connect('tvlive-'+t)});
+ peer.on('call',call=>{
+  call.answer();
+  call.on('stream',st=>{v.srcObject=st;s.textContent='';v.play().catch(()=>{s.textContent='Натисни ▶, щоб почати'})});
+  call.on('close',()=>s.textContent='Ефір завершено');
+ });
+ peer.on('error',e=>s.textContent=e.type==='peer-unavailable'?'Ефір не запущений':'Помилка: '+e.type);
+}
+</script>
